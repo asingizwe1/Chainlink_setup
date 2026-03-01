@@ -5,7 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MockLiquid is ERC20,Ownable {
-    constructor() ERC20("Liquid", "LIQ") Ownable(msg.sender) 
+    constructor() ERC20("MicroVouchBank", "MVB") Ownable(msg.sender) 
     {
         _mint(msg.sender, 1_000_000 ether);
     }
