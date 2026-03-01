@@ -38,6 +38,13 @@ AggregatorV3Interface public ugxUsdFeed;//store oracle address
 IMockLiquid public liquidToken;
 uint256 public constant WITHDRAW_BONUS_BPS = 200; // 2%
 
+/*//////////////////////////////////////////////////////////////
+                  DEMO: ACTIVE BORROWER 
+//////////////////////////////////////////////////////////////*/
+
+bytes32 public demoActiveBorrowerId;
+
+event DemoActiveBorrowerUpdated(bytes32 indexed userId, uint256 timestamp);
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
