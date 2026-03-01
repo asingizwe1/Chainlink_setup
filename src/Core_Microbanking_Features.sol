@@ -28,7 +28,7 @@ contract CoreMicroBank is AutomationCompatible{
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
 uint256 public lastGlobalInterestRun;
-uint256 public constant INTEREST_INTERVAL = 1 days;
+uint256 public constant INTEREST_INTERVAL = 5 seconds;
 ///interest constants above
     uint256 public constant FEE_BPS = 500; // 5%
     uint256 public constant BPS_DENOMINATOR = 10_000;
