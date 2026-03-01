@@ -144,49 +144,48 @@ bool interestDue = timeDue && activeBorrowerHasDebt;
 upkeepNeeded = feesDue || interestDue;
 }
 //perform upkeep- if checkUpkeep returned true
-function performUpkeep(
-    bytes calldata /* performData */
-) external override {
-//“Chainlink Automation guarantees time-based interest correctness
-// without looping users, preserving gas efficiency.”
+  function performUpkeep(bytes calldata /* performData */ ) external override {
+        // =========================
+        // B) DEMO INTEREST (Option C)
+        // =========================
+        if (demoActiveBorrowerId != bytes32(0)) {
+            User storage demoUser = users[demoActiveBorrowerId];
 
-// Pseudo: liquidation target passed via performData
+            bool timeDue = (block.timestamp - lastGlobalInterestRun) >= INTEREST_INTERVAL;
+            bool hasDebt = demoUser.exists && demoUser.loanDebt > 0;
 
+            if (timeDue && hasDebt) {
+                lastGlobalInterestRun = block.timestamp;
+                _accrueInterest(demoActiveBorrowerId); // borrower-specific (no looping)
+            }
+        }
 
-if ((block.timestamp - lastGlobalInterestRun) >= INTEREST_INTERVAL) {
-    lastGlobalInterestRun = block.timestamp;
-    // interest accrual happens lazily per user
-}
+        // =========================
+        // A) FEE CONVERSION (deposit-driven)
+        // =========================
+        if (protocolFeePool == 0) {
+            return; // nothing to convert right now
+        }
 
-    // 1. Re-check condition
-    if (protocolFeePool == 0) {
-        return;
+        // Simulate price (later replace with real feed)
+        uint256 mockLiquidPrice = 1e18; // demo value
+
+        // Convert & stake
+        uint256 usdtAmount = protocolFeePool;
+        uint256 liquidAmount = (usdtAmount * 1e18) / mockLiquidPrice;
+
+        protocolFeePool = 0;
+        totalLiquidStaked += liquidAmount;
+
+        // ✅ IMPORTANT: mint LIQ here too (so automation actually changes token balance like your manual button)
+        liquidToken.mint(address(this), liquidAmount);
+
+        // Emit events
+        emit FeesConvertedToLiquid(usdtAmount, liquidAmount, mockLiquidPrice, block.timestamp);
+        emit LiquidStaked(liquidAmount, totalLiquidStaked);
+
+        emit ProtocolLiquidBalanceUpdated(IERC20(address(liquidToken)).balanceOf(address(this)), block.timestamp);
     }
-
-    // 2. Simulate price (later replace with real feed)
-    uint256 mockLiquidPrice = 1e18; // demo value
-
-    // 3. Convert & stake
-    uint256 usdtAmount = protocolFeePool;
-uint256 liquidAmount = (usdtAmount * 1e18) / mockLiquidPrice;
-
-    protocolFeePool = 0;
-    totalLiquidStaked += liquidAmount;
-
-    // 4. Emit events
-    emit FeesConvertedToLiquid(
-        usdtAmount,
-        liquidAmount,
-        mockLiquidPrice,
-        block.timestamp
-    );
-
-    emit LiquidStaked(liquidAmount, totalLiquidStaked);
-emit ProtocolLiquidBalanceUpdated(
-    IERC20(address(liquidToken)).balanceOf(address(this)),
-    block.timestamp
-);
-}
 
     /*//////////////////////////////////////////////////////////////
                          LIQUIDATION CHECK
@@ -275,6 +274,7 @@ function liquidate(bytes32 userId) external {
          //network flexibility comes from.->allows aNy network - Sepolia,local Anvil,anychain
          ugxUsdFeed = AggregatorV3Interface(_ugxUsdFeed); 
     liquidToken = IMockLiquid(_liquidToken);
+    lastGlobalInterestRun = block.timestamp;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -373,7 +373,9 @@ function liquidate(bytes32 userId) external {
         );
 
         u.loanDebt += amount;
-
+demoActiveBorrowerId = userId;
+//make this borrower the “active demo borrower”
+emit DemoActiveBorrowerUpdated(userId, block.timestamp);
         emit LoanRequested(userId, amount);
         emit LoanIssued(userId, amount, u.loanDebt);
     }
