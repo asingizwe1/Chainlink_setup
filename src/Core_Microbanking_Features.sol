@@ -44,7 +44,9 @@ uint256 public constant WITHDRAW_BONUS_BPS = 200; // 2%
 
 bytes32 public demoActiveBorrowerId;
 
-event DemoActiveBorrowerUpdated(bytes32 indexed userId, uint256 timestamp);
+event DemoActiveBorrowerUpdated(bytes32 indexed userId, uint256 timestamp);//Emits event when active borrower changes.
+//Makes interest borrower-specific (not global).
+//Stores one borrower who gets automated interest updates.
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
@@ -124,9 +126,22 @@ function checkUpkeep(
     override
     returns (bool upkeepNeeded, bytes memory /* performData */)
 {
-    bool interestDue = (block.timestamp - lastGlobalInterestRun) >= INTEREST_INTERVAL;
+    // bool interestDue = (block.timestamp - lastGlobalInterestRun) >= INTEREST_INTERVAL;
 
-    upkeepNeeded = protocolFeePool > 0|| interestDue;
+    // upkeepNeeded = protocolFeePool > 0|| interestDue;
+    bool feesDue = protocolFeePool > 0;
+
+bool timeDue = (block.timestamp - lastGlobalInterestRun) >= INTEREST_INTERVAL;
+
+bool activeBorrowerHasDebt = false;
+if (demoActiveBorrowerId != bytes32(0)) {
+    User storage u = users[demoActiveBorrowerId];
+    activeBorrowerHasDebt = u.exists && u.loanDebt > 0;
+}
+
+bool interestDue = timeDue && activeBorrowerHasDebt;
+
+upkeepNeeded = feesDue || interestDue;
 }
 //perform upkeep- if checkUpkeep returned true
 function performUpkeep(
